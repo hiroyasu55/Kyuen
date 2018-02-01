@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import PropTypes from 'prop-types';
 
-const SCORE_TITLES = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+const INNING_TITLES = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 const styles = StyleSheet.create({
   body: {
     flex: 1,
-    flexDirection: 'column',
+    flexDirection: 'row',
     width: '100%',
     // height: 30,
     backgroundColor: '#000000',
@@ -26,41 +26,21 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     borderColor: '#ffffff',
   },
-  headerRow: {
-    flex: 0.8,
-    flexDirection: 'row',
-    borderBottomWidth: 2,
-    borderStyle: 'solid',
-    borderColor: '#ffffff',
-  },
-  headerTeamName: {
-    flex: 3,
-  },
-  headerScore: {
-    flex: 1,
+  teamNameCol: {
+    flex: 4,
     borderRightWidth: 1,
     borderStyle: 'solid',
     borderColor: '#ffffff',
   },
-  headerTotal: {
-    flex: 1,
-  },
-  headerText: {
-    textAlign: 'center',
-    color: '#ffffff',
-    fontSize: 12,
-    margin: 2,
-  },
-  row: {
-    flex: 1,
-    flexDirection: 'row',
+  teamNameHeader: {
+    flex: 0.8,
     borderBottomWidth: 1,
     borderStyle: 'solid',
     borderColor: '#ffffff',
   },
   teamName: {
-    flex: 3,
-    borderRightWidth: 1,
+    flex: 1,
+    borderBottomWidth: 1,
     borderStyle: 'solid',
     borderColor: '#ffffff',
   },
@@ -70,14 +50,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     margin: 4,
   },
-  score: {
+  scoreCol: {
     flex: 1,
     borderRightWidth: 1,
     borderStyle: 'solid',
     borderColor: '#ffffff',
   },
-  scoreTotal: {
+  scoreHeader: {
+    flex: 0.8,
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#ffffff',
+  },
+  scoreHeaderText: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 12,
+    margin: 2,
+  },
+  score: {
     flex: 1,
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#ffffff',
   },
   scoreText: {
     textAlign: 'center',
@@ -85,13 +80,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     margin: 4,
   },
+  totalCol: {
+    flex: 1,
+    borderRightWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#ffffff',
+  },
+  totalHeader: {
+    flex: 0.8,
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#ffffff',
+  },
+  totalHeaderText: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 12,
+    margin: 2,
+  },
+  total: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#ffffff',
+  },
+  totalText: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 12,
+    margin: 4,
+  },
+  currentScore: {
+    backgroundColor: '#000080',
+  },
 });
+
+const culcTotals = (scores) => {
+  const totals = [0, 0];
+  scores.forEach((inningScores) => {
+    [0, 1].forEach((turn) => {
+      if (inningScores.length > turn) totals[turn] += inningScores[turn];
+    });
+  });
+  return totals;
+};
 
 export default class ScoreBoardComponent extends Component<{}> {
   static propTypes = {
     teams: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string,
     })),
+    inning: PropTypes.number,
+    turn: PropTypes.number,
+    scores: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
   };
   static defaultProps = {
     teams: [
@@ -102,84 +143,89 @@ export default class ScoreBoardComponent extends Component<{}> {
         name: 'none',
       },
     ],
+    inning: -1,
+    turn: -1,
+    scores: [],
   };
 
   render() {
-    const scores = [
-      [0, 0, 1, 0, 0],
-      [0, 3, 0, 0],
-    ];
-
-    const headerScores = SCORE_TITLES.map((title, i) => {
+    const teamNameCols = this.props.teams.map((team, turn) => {
       return (
         <View
-          key={`SCOREBOARD_HEADER_SCORE_${i}`}
-          style={styles.headerScore}
+          key={`SCOREBOARD_TEAMNAME_${turn}`}
+          style={styles.teamName}
         >
-          <Text style={styles.headerText}>
-            {title}
+          <Text style={styles.teamNameText}>
+            {team.name}
           </Text>
         </View>
       );
     });
-    const rows = [0, 1].map((turn) => {
-      const scoresView = SCORE_TITLES.map((_, i) => {
-        const view = i < scores[turn].length ? (
+
+    const scoreCols = INNING_TITLES.map((title, inning) => {
+      const scoreCells = [0, 1].map((turn) => {
+        return (
           <View
-            key={`SCOREBOARD_TOP_SCORE_${i}`}
-            style={styles.score}
+            key={`SCOREBOARD_SCORE_${inning}_${turn}`}
+            style={[
+              styles.score,
+              inning === this.props.inning && turn === this.props.turn
+                ? styles.currentScore
+                : null,
+            ]}
           >
             <Text style={styles.scoreText}>
-              {scores[turn][i]}
+              {this.props.scores.length > inning
+                && this.props.scores[inning].length > turn
+                ? this.props.scores[inning][turn]
+                : ''}
             </Text>
           </View>
-        ) : (
-          <View
-            key={`SCOREBOARD_ROW${turn}_SCORE${i}`}
-            style={styles.score}
-          />
         );
-        return view;
       });
-
-      const total = scores[turn].reduce((prev, current) => {
-        return prev + current;
-      });
-
-      const row = (
+      return (
         <View
-          key={`SCOREBOARD_ROW${turn}`}
-          style={styles.row}
+          key={`SCOREBOARD_SCORE_${inning}`}
+          style={styles.scoreCol}
         >
-          <View style={styles.teamName}>
-            <Text style={styles.teamNameText}>
-              {this.props.teams[turn].name}
+          <View style={styles.scoreHeader}>
+            <Text style={styles.scoreHeaderText}>
+              {title}
             </Text>
           </View>
-          {scoresView}
-          <View style={styles.scoreTotal}>
-            <Text style={styles.scoreText}>
-              {total}
-            </Text>
-          </View>
+          {scoreCells}
         </View>
       );
-
-      return row;
+    });
+    const totals = culcTotals(this.props.scores);
+    const totalCells = totals.map((total, turn) => {
+      return (
+        <View
+          key={`SCOREBOARD_TOTAL_${turn}`}
+          style={styles.total}
+        >
+          <Text style={styles.totalText}>
+            {total}
+          </Text>
+        </View>
+      );
     });
 
     return (
       <View style={styles.body}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTeamName} />
-          {headerScores}
-          <View style={styles.headerTotal}>
-            <Text style={styles.headerText}>
+        <View style={styles.teamNameCol}>
+          <View style={styles.teamNameHeader} />
+          {teamNameCols}
+        </View>
+        {scoreCols}
+        <View style={styles.totalCol}>
+          <View style={styles.totalHeader}>
+            <Text style={styles.totalHeaderText}>
               R
             </Text>
           </View>
+          {totalCells}
         </View>
-        {rows}
       </View>
     );
   }

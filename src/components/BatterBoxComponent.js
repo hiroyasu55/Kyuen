@@ -7,7 +7,6 @@ import React, {
   Component,
 } from 'react';
 import {
-  Platform,
   StyleSheet,
   Text,
   View,
@@ -15,10 +14,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import PropTypes from 'prop-types';
-import Player from '../models/Player';
 import Ball from '../models/Ball';
-
-const HEADER_HEIGHT = Platform.OS === 'ios' ? 64 : 64;
 
 const STRIKE_ZONE = {
   WIDTH: 100,
@@ -38,10 +34,10 @@ const styles = StyleSheet.create({
   },
   leftBatter: {
     position: 'absolute',
-    top: 5,
+    top: 0,
     left: 10,
     width: 100,
-    height: 180,
+    height: 200,
     transform: [
       { scaleX: -1 },
       { scaleY: 1 },
@@ -49,10 +45,10 @@ const styles = StyleSheet.create({
   },
   rightBatter: {
     position: 'absolute',
-    top: 5,
+    top: 0,
     right: 10,
     width: 100,
-    height: 180,
+    height: 200,
   },
   strikeZone: {
     position: 'absolute',
@@ -136,22 +132,16 @@ const ballStyles = StyleSheet.create({
 
 class BallComponent extends Component<{}> {
   static propTypes = {
-    index: PropTypes.number,
     type: PropTypes.string,
     x: PropTypes.number,
     y: PropTypes.number,
     text: PropTypes.string,
-    onPress: PropTypes.func,
-    onLongPress: PropTypes.func,
   }
   static defaultProps = {
-    index: 0,
     type: 'none',
     x: 0,
     y: 0,
     text: '',
-    onPress: null,
-    onLongPress: null,
   }
 
   constructor(props) {
@@ -160,28 +150,6 @@ class BallComponent extends Component<{}> {
       x: this.props.x,
       y: this.props.y,
     };
-  }
-
-  onPress(evt) {
-    const ret = {
-      index: this.props.index,
-      x: evt.nativeEvent.pageX,
-      y: evt.nativeEvent.pageY - HEADER_HEIGHT,
-    };
-    if (this.props.onPress) {
-      this.props.onPress(ret);
-    }
-  }
-
-  onLongPress(evt) {
-    const ret = {
-      index: this.props.index,
-      x: evt.nativeEvent.pageX,
-      y: evt.nativeEvent.pageY - HEADER_HEIGHT,
-    };
-    if (this.props.onLongPress) {
-      this.props.onLongPress(ret);
-    }
   }
 
   render() {
@@ -235,8 +203,7 @@ export default class BatterBoxComponent extends Component<{}> {
   static propTypes = {
     width: PropTypes.number,
     height: PropTypes.number,
-    batters: PropTypes.arrayOf(Player.propTypes),
-    battersIndex: PropTypes.number,
+    battingSide: PropTypes.string,
     balls: PropTypes.arrayOf(Ball.propTypes),
     newBall: Ball.propTypes,
     onPress: PropTypes.func,
@@ -245,8 +212,7 @@ export default class BatterBoxComponent extends Component<{}> {
   static defaultProps = {
     width: 100,
     height: 50,
-    batters: [],
-    battersIndex: 0,
+    battingSide: 'none',
     balls: [],
     newBall: null,
     onPress: null,
@@ -254,29 +220,49 @@ export default class BatterBoxComponent extends Component<{}> {
   }
 
   onPress(evt) {
-    const ret = {
-      x: evt.nativeEvent.pageX,
-      y: evt.nativeEvent.pageY - HEADER_HEIGHT,
-    };
-    if (this.props.onPress) {
-      this.props.onPress(ret);
-    }
+    evt.persist();
+    this.measureBody()
+      .then(({ pageX, pageY }) => {
+        const ret = {
+          x: evt.nativeEvent.pageX - pageX,
+          y: evt.nativeEvent.pageY - pageY,
+        };
+        if (this.props.onPress) {
+          this.props.onPress(ret);
+        }
+      });
   }
 
   onLongPress(evt) {
-    const x = evt.nativeEvent.pageX;
-    const y = evt.nativeEvent.pageY - HEADER_HEIGHT;
-    const pointX = Math.round((x - this.props.width / 2) / (STRIKE_ZONE.WIDTH / 2) * 100);
-    const pointY = Math.round((this.props.height / 2 - y) / (STRIKE_ZONE.HEIGHT / 2) * 100);
-    const ret = {
-      x,
-      y,
-      pointX,
-      pointY,
-    };
-    if (this.props.onLongPress) {
-      this.props.onLongPress(ret);
-    }
+    evt.persist();
+    this.measureBody()
+      .then((measure) => {
+        const location = {
+          x: evt.nativeEvent.pageX - measure.pageX,
+          y: evt.nativeEvent.pageY - measure.pageY,
+        };
+        const point = {
+          pointX: Math.round((location.x - measure.width / 2) / (STRIKE_ZONE.WIDTH / 2) * 100),
+          pointY: Math.round((measure.height / 2 - location.y) / (STRIKE_ZONE.HEIGHT / 2) * 100),
+        };
+        const ret = {
+          ...location,
+          ...point,
+        };
+        if (this.props.onLongPress) {
+          this.props.onLongPress(ret);
+        }
+      });
+  }
+
+  measureBody() {
+    return new Promise((resolve) => {
+      this.body.measure((x, y, width, height, pageX, pageY) => {
+        resolve({
+          x, y, width, height, pageX, pageY,
+        });
+      });
+    });
   }
 
   pointToLocation({ pointX, pointY }) {
@@ -288,8 +274,7 @@ export default class BatterBoxComponent extends Component<{}> {
   }
 
   render() {
-    const batter = new Player(this.props.batters[this.props.battersIndex]);
-    const batterImage = batter.battingSide === 'left' ? (
+    const batterImage = this.props.battingSide === 'left' ? (
       <Image
         source={require('../../img/batter.png')}
         style={styles.leftBatter}
@@ -341,7 +326,7 @@ export default class BatterBoxComponent extends Component<{}> {
         onLongPress={evt => this.onLongPress(evt)}
       >
         <View
-          ref={(c) => { this.body = c; }}
+          ref={(body) => { this.body = body; }}
           style={[
             styles.body,
             {

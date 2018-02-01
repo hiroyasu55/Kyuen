@@ -16,61 +16,47 @@ import Player from '../models/Player';
 
 const styles = StyleSheet.create({
   body: {
-    backgroundColor: '#000000',
-    width: 120,
+    width: '100%',
     height: 80,
+    backgroundColor: '#000000',
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: '#e0e0e0',
   },
-  inner: {
-    flex: 1,
-    flexDirection: 'column',
-    // justifyContent: 'center',
-    // alignItems: 'center',
-    margin: 4,
-  },
   row: {
-    flex: 1,
+    flex: 3,
     flexDirection: 'row',
   },
   rowText: {
     textAlign: 'left',
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
+    marginLeft: 4,
+    marginTop: 4,
   },
 });
 
 export default class BatterInfoComponent extends Component<{}> {
   static propTypes = {
-    batters: PropTypes.arrayOf(Player.propTypes),
+    batter: Player.propTypes,
     battersIndex: PropTypes.number,
   }
   static defaultProps = {
-    batters: [],
+    batter: null,
     battersIndex: 0,
   }
 
-  /*
-  constructor(props) {
-    super(props);
-  }
-  */
-
   render() {
-    const batter = this.props.batters[this.props.battersIndex];
     return (
       <View style={styles.body}>
-        <View style={styles.inner}>
-          <View style={styles.row}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.rowText}>
-                {this.props.battersIndex + 1}: {batter.name} {batter.backNumber ? `[${batter.backNumber}]` : ''}
-              </Text>
-              <Text style={styles.rowText}>
-                {batter.positionText()}
-              </Text>
-            </View>
+        <View style={styles.row}>
+          <View style={styles.rowHeader}>
+            <Text style={styles.rowText}>
+              {this.props.battersIndex + 1}: {this.props.batter.name}
+            </Text>
+            <Text style={styles.rowText}>
+              {this.props.batter.positionText()}
+            </Text>
           </View>
         </View>
       </View>

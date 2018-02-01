@@ -9,6 +9,7 @@
     "flow": "flow"
   },
   "dependencies": {
+    "nanoid": "^1.0.1",
     "prop-types": "^15.6.0",
     "react": "16.2.0",
     "react-native": "0.52.0",

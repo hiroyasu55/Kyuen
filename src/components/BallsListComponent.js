@@ -10,174 +10,101 @@ import {
   StyleSheet,
   Text,
   View,
+  ScrollView,
+  ListView,
 } from 'react-native';
 import PropTypes from 'prop-types';
+import Ball from '../models/Ball';
 
 const styles = StyleSheet.create({
   body: {
-    backgroundColor: '#ffffff',
-    width: 150,
-    height: 120,
+    width: '100%',
+    backgroundColor: '#000000',
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'gray',
+    borderColor: '#c0c0C0',
   },
-  inner: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 10,
-  },
-  row: {
+  listRow: {
     flex: 1,
     flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#c0c0c0',
   },
-  rowHeader: {
-    marginTop: 2,
-    flex: 5,
-    width: 20,
-  },
-  rowHeaderText: {
-    color: '#ffffff',
-    fontSize: 20,
-  },
-  ballCell: {
-    flex: 5,
-    // width: 30,
+  index: {
+    flex: 1,
   },
   ball: {
-    marginTop: 4,
-    width: BALL.RADIUS * 2,
-    height: BALL.RADIUS * 2,
-    backgroundColor: '#008000',
-    borderRadius: BALL.RADIUS,
+    flex: 5,
   },
-  strike: {
-    marginTop: 4,
-    width: BALL.RADIUS * 2,
-    height: BALL.RADIUS * 2,
-    backgroundColor: '#ffa500',
-    borderRadius: BALL.RADIUS,
-  },
-  out: {
-    marginTop: 4,
-    width: BALL.RADIUS * 2,
-    height: BALL.RADIUS * 2,
-    backgroundColor: '#ff0000',
-    borderRadius: BALL.RADIUS,
+  listRowText: {
+    color: '#ffffff',
+    fontSize: 13,
+    margin: 4,
   },
 });
 
-const getCounts = (balls, outs) => {
-  const ret = {
-    balls: 0,
-    strikes: 0,
-  };
-  balls.forEach((ball) => {
-    if (ball.judge === 'ball') {
-      if (ret.balls < 4) ret.balls += 1;
-    } else if (ball.judge === 'strike') {
-      if (ret.strikes < 3) ret.strikes += 1;
-    } else if (ball.judge === 'foul') {
-      if (ret.strikes < 2) ret.strikes += 1;
-    }
-  });
-  if (outs) ret.outs = outs;
-  return ret;
-};
-
-export default class CountsBoardComponent extends Component<{}> {
+export default class BallsListComponent extends Component<{}> {
   static propTypes = {
-    balls: PropTypes.arrayOf(PropTypes.shape({
-      type: PropTypes.string,
-    })),
-    outs: PropTypes.number,
+    balls: PropTypes.arrayOf(Ball.propTypes),
   }
   static defaultProps = {
-    balls: [],
-    outs: 0,
+    balls: [
+      new Ball({
+        type: 'strike',
+      }),
+    ],
   }
 
-  /*
   constructor(props) {
     super(props);
+
+    const ds = new ListView.DataSource({
+      rowHasChanged: (r1, r2) => r1 !== r2,
+    });
+    const items = this.props.balls.map((player, index) => {
+      return {
+        index,
+        player,
+      };
+    });
+    this.state = {
+      items: ds.cloneWithRows(items),
+    };
+    this.renderItem = this.renderItem.bind(this);
   }
-  */
+
+  renderItem(item) {
+    return (
+      <View
+        key={`BALLS_LIST_${item.index}`}
+        style={[
+          styles.listRow,
+        ]}
+      >
+        <View style={styles.index}>
+          <Text style={styles.listRowText}>
+            {item.index + 1}
+          </Text>
+        </View>
+        <View style={styles.ball}>
+          <Text style={styles.listRowText}>
+            {item.ball.type}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   render() {
-    const counts = getCounts(this.props.balls, this.props.outs);
-    const ballsView = [0, 1, 2, 3].map((i) => {
-      const view = i < counts.balls ? (
-        <View
-          key={`COUNTS_BOARD_BALL_${i + 1}`}
-          style={styles.ballCell}
-        >
-          <View style={styles.ball} />
-        </View>
-      ) : (
-        <View
-          key={`COUNTS_BOARD_BALL_${i + 1}`}
-          style={styles.ballCell}
-        />
-      );
-      return view;
-    });
-    const strikesView = [0, 1, 2, 3].map((i) => {
-      const view = i < counts.balls ? (
-        <View
-          key={`COUNTS_BOARD_STRIKE_${i + 1}`}
-          style={styles.ballCell}
-        >
-          <View style={styles.strike} />
-        </View>
-      ) : (
-        <View
-          key={`COUNTS_BOARD_STRIKE_${i + 1}`}
-          style={styles.ballCell}
-        />
-      );
-      return view;
-    });
-    const outsView = [0, 1, 2, 3].map((i) => {
-      const view = i < counts.outs ? (
-        <View
-          key={`COUNTS_BOARD_OUT_${i + 1}`}
-          style={styles.ballCell}
-        >
-          <View style={styles.out} />
-        </View>
-      ) : (
-        <View
-          key={`COUNTS_BOARD_OUT_${i + 1}`}
-          style={styles.ballCell}
-        />
-      );
-      return view;
-    });
-
     return (
       <View style={styles.body}>
-        <View style={styles.inner}>
-          <View style={styles.row}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.rowHeaderText}>B</Text>
-            </View>
-            {ballsView}
-          </View>
-          <View style={styles.row}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.rowHeaderText}>S</Text>
-            </View>
-            {strikesView}
-          </View>
-          <View style={styles.row}>
-            <View style={styles.rowHeader}>
-              <Text style={styles.rowHeaderText}>O</Text>
-            </View>
-            {outsView}
-          </View>
-        </View>
+        <ScrollView style={{ height: 100 }}>
+          <ListView
+            dataSource={this.state.items}
+            renderRow={this.renderItem}
+          />
+        </ScrollView>
       </View>
     );
   }

@@ -15,12 +15,16 @@ import {
   Dimensions,
 } from 'react-native';
 import PropTypes from 'prop-types';
+import generate from 'nanoid/generate';
+import Team from './models/Team';
 import Player from './models/Player';
 import Ball from './models/Ball';
 import ScoreBoardComponent from './components/ScoreBoardComponent';
 import BatterBoxComponent from './components/BatterBoxComponent';
 import BatterInfoComponent from './components/BatterInfoComponent';
 import CountsBoardComponent from './components/CountsBoardComponent';
+import BallsListComponent from './components/BallsListComponent';
+import CurrentPlayersListComponent from './components/CurrentPlayersListComponent';
 import AddBallPopover from './components/AddBallPopover';
 
 const win = Dimensions.get('window');
@@ -29,7 +33,6 @@ const batterBoxStyle = {
   width: win.width,
   height: win.width * 0.6,
 };
-const countsBoardWidth = 150;
 
 const styles = StyleSheet.create({
   container: {
@@ -52,31 +55,27 @@ const styles = StyleSheet.create({
     width: batterBoxStyle.width,
     height: batterBoxStyle.height,
   },
-  InfoArea: {
-    alignItems: 'center',
+  infoArea: {
     backgroundColor: '#000000',
-    width: win.width,
-    height: 100,
-  },
-  batterInfo: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-  },
-  countsBoard: {
-    position: 'absolute',
-    right: 10,
-    top: 10,
-  },
-  underArea: {
+    width: '100%',
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#2f4f4f',
+  },
+  infoAreaCol: {
+    flex: 3,
+    marginRight: 4,
+  },
+  countsBoard: {
+    marginBottom: 4,
+  },
+  batterInfo: {
+    marginBottom: 4,
   },
   ballsList: {
-    backgroundColor: '#ffffff',
-    width: win.width - countsBoardWidth,
-    height: 500,
+    flex: 1,
+  },
+  currentPlayersList: {
+    flex: 1,
   },
   tooltip: {
     position: 'absolute',
@@ -107,13 +106,6 @@ class BallTooltipComponent extends Component<{}> {
     y: 0,
   }
 
-  /*
-  constructor(props) {
-    super(props);
-    // this.state.isVisible = props.isVisible;
-  }
-  */
-
   render() {
     return this.props.isVisible ? (
       <View
@@ -135,29 +127,6 @@ class BallTooltipComponent extends Component<{}> {
   }
 }
 
-const getBatters = () => {
-  const batters = [];
-  batters.push(new Player({
-    name: '京田',
-    backNumber: '51',
-    battingSide: 'left',
-    position: 'ss',
-  }));
-  batters.push(new Player({
-    name: '荒木',
-    backNumber: '2',
-    battingSide: 'right',
-    position: '2b',
-  }));
-  batters.push(new Player({
-    name: '大島',
-    backNumber: '8',
-    battingSide: 'left',
-    position: 'cf',
-  }));
-  return batters;
-};
-
 const getCounts = (balls) => {
   const ret = {
     ballsCount: 0,
@@ -175,6 +144,11 @@ const getCounts = (balls) => {
   return ret;
 };
 
+const createId = () => {
+  const id = generate('0123456789abcdef', 24);
+  return id;
+};
+
 export default class BatterScreen extends Component<{}> {
   static navigationOptions = {
     title: '球援',
@@ -185,25 +159,9 @@ export default class BatterScreen extends Component<{}> {
 
   constructor(props) {
     super(props);
-    const teams = [
-      {
-        name: 'ドラゴンズ',
-      },
-      {
-        name: 'タイガース',
-      },
-    ];
 
     this.state = {
       isLoaded: false,
-      teams: teams,
-      batters: getBatters(),
-      battersIndex: 0,
-      balls: [],
-      ballsCount: 0,
-      strikesCount: 0,
-      outsCount: 0,
-      newBall: null,
       tooltip: {
         isVisible: false,
         x: 0,
@@ -217,6 +175,7 @@ export default class BatterScreen extends Component<{}> {
         pointX: 0,
         pointY: 0,
       },
+      newBall: null,
     };
     // const counts = getCounts(this.state.balls, this.state.outs);
   }
@@ -245,25 +204,27 @@ export default class BatterScreen extends Component<{}> {
         newBall: null,
       };
     });
-    this.setState((previousState) => {
-      return {
-        newBall: new Ball({
-          type: 'new',
-          pointX: ret.pointX,
-          pointY: ret.pointY,
-        }),
-        tooltip: Object.assign(previousState.tooltip, {
-          isVisible: false,
-        }),
-        addBallPopup: Object.assign(previousState.addBallPopup, {
-          isVisible: true,
-          x: ret.x,
-          y: ret.y,
-          pointX: ret.pointX,
-          pointY: ret.pointY,
-          balls: this.state.balls,
-        }),
-      };
+    this.batterBoxArea.measure((x, y) => {
+      this.setState((previousState) => {
+        return {
+          newBall: new Ball({
+            type: 'new',
+            pointX: ret.pointX,
+            pointY: ret.pointY,
+          }),
+          tooltip: Object.assign(previousState.tooltip, {
+            isVisible: false,
+          }),
+          addBallPopup: Object.assign(previousState.addBallPopup, {
+            isVisible: true,
+            x: ret.x + x,
+            y: ret.y + y,
+            pointX: ret.pointX,
+            pointY: ret.pointY,
+            balls: this.state.balls,
+          }),
+        };
+      });
     });
   }
 
@@ -332,9 +293,215 @@ export default class BatterScreen extends Component<{}> {
   }
 
   fetchDate() {
-    this.setState({
-      // isLoaded: true,
-    });
+    const teams = [
+      new Team({
+        id: createId(),
+        name: 'ドラゴンズ',
+        players: [
+          new Player({
+            id: createId(),
+            name: '京田',
+            backNumber: '51',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'ss',
+          }),
+          new Player({
+            id: createId(),
+            name: '亀澤',
+            backNumber: '53',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: '2b',
+          }),
+          new Player({
+            id: createId(),
+            name: '大島',
+            backNumber: '8',
+            battingSide: 'left',
+            pitchingSide: 'left',
+            position: 'cf',
+          }),
+          new Player({
+            id: createId(),
+            name: 'ビシエド',
+            backNumber: '42',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: '1b',
+          }),
+          new Player({
+            id: createId(),
+            name: '福田',
+            backNumber: '55',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: 'lf',
+          }),
+          new Player({
+            id: createId(),
+            name: '藤井',
+            backNumber: '4',
+            battingSide: 'both',
+            pitchingSide: 'right',
+            position: 'rf',
+          }),
+          new Player({
+            id: createId(),
+            name: '高橋',
+            backNumber: '3',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: '3b',
+          }),
+          new Player({
+            id: createId(),
+            name: '大野奨',
+            backNumber: '27',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: 'c',
+          }),
+          new Player({
+            id: createId(),
+            name: '大野雄',
+            backNumber: '22',
+            battingSide: 'left',
+            pitchingSide: 'left',
+            position: 'p',
+          }),
+        ],
+      }),
+      new Team({
+        id: createId(),
+        name: 'ベイスターズ',
+        players: [
+          new Player({
+            id: createId(),
+            name: '桑原',
+            backNumber: '51',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'ss',
+          }),
+          new Player({
+            id: createId(),
+            name: '大和',
+            backNumber: '9',
+            battingSide: 'both',
+            pitchingSide: 'right',
+            position: '2b',
+          }),
+          new Player({
+            id: createId(),
+            name: 'ロペス',
+            backNumber: '2',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: '1b',
+          }),
+          new Player({
+            id: createId(),
+            name: '筒香',
+            backNumber: '7',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'lf',
+          }),
+          new Player({
+            id: createId(),
+            name: '宮﨑',
+            backNumber: '51',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: '3b',
+          }),
+          new Player({
+            id: createId(),
+            name: '梶谷',
+            backNumber: '3',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'rf',
+          }),
+          new Player({
+            id: createId(),
+            name: '戸柱',
+            backNumber: '10',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'c',
+          }),
+          new Player({
+            id: createId(),
+            name: '井納',
+            backNumber: '15',
+            battingSide: 'right',
+            pitchingSide: 'right',
+            position: 'p',
+          }),
+          new Player({
+            id: createId(),
+            name: '倉本',
+            backNumber: '5',
+            battingSide: 'left',
+            pitchingSide: 'right',
+            position: 'ss',
+          }),
+        ],
+      }),
+    ];
+    const scores = [
+      [0],
+    ];
+    const currentPlayers = [
+      [
+        teams[0].players[0],
+        teams[0].players[1],
+        teams[0].players[2],
+        teams[0].players[3],
+        teams[0].players[4],
+        teams[0].players[5],
+        teams[0].players[6],
+        teams[0].players[7],
+        teams[0].players[8],
+      ],
+      [
+        teams[1].players[0],
+        teams[1].players[1],
+        teams[1].players[2],
+        teams[1].players[3],
+        teams[1].players[4],
+        teams[1].players[5],
+        teams[1].players[6],
+        teams[1].players[7],
+        teams[1].players[8],
+      ],
+    ];
+    const battersIndex = 0;
+    const inning = 0;
+    const turn = 0;
+    const batters = currentPlayers[turn];
+    const batter = batters[battersIndex];
+    const battingSide = batter.battingSide === 'both'
+      ? 'left'
+      : batter.battingSide;
+    setTimeout(() => {
+      this.setState({
+        isLoaded: true,
+        teams: teams,
+        scores: scores,
+        inning: inning,
+        turn: turn,
+        currentPlayers: currentPlayers,
+        battersIndex: battersIndex,
+        battingSide: battingSide,
+        balls: [],
+        ballsCount: 0,
+        strikesCount: 0,
+        outsCount: 0,
+      });
+    }, 1000);
   }
 
   rotateBatter() {
@@ -365,8 +532,10 @@ export default class BatterScreen extends Component<{}> {
     }
     if (rotated) {
       this.setState({
+        // scores:
         balls: [],
-        battersIndex: (this.state.battersIndex + 1) % this.state.batters.length,
+        battersIndex:
+          (this.state.battersIndex + 1) % this.state.currentPlayers[this.state.turn].length,
         ballsCount: 0,
         strikesCount: 0,
         outsCount: counts.outsCount,
@@ -379,15 +548,16 @@ export default class BatterScreen extends Component<{}> {
   }
 
   render() {
-    if (this.state.isLoading) {
+    if (!this.state.isLoaded) {
       return (
         <View
           style={{
             flex: 1,
-            paddingTop: 20,
+            flexDirection: 'row',
+            justifyContent: 'space-around',
           }}
         >
-          <ActivityIndicator />
+          <ActivityIndicator size="large" />
         </View>
       );
     }
@@ -397,38 +567,57 @@ export default class BatterScreen extends Component<{}> {
         <View style={styles.scoreBoardArea}>
           <ScoreBoardComponent
             teams={this.state.teams}
+            scores={this.state.scores}
+            inning={this.state.inning}
+            turn={this.state.turn}
           />
         </View>
-        <View style={styles.batterBoxArea}>
+        <View
+          ref={(c) => { this.batterBoxArea = c; }}
+          style={styles.batterBoxArea}
+        >
           <BatterBoxComponent
             width={batterBoxStyle.width}
             height={batterBoxStyle.height}
-            batters={this.state.batters}
-            battersIndex={this.state.battersIndex}
+            batter={this.state.currentPlayers[this.state.turn][this.state.battersIndex]}
+            battingSide={this.state.battingSide}
             balls={this.state.balls}
             newBall={this.state.newBall}
             onPress={ret => this.onBatterBoxPress(ret)}
             onLongPress={ret => this.onBatterBoxLongPress(ret)}
           />
         </View>
-        <View style={styles.InfoArea}>
-          <View style={styles.batterInfo}>
-            <BatterInfoComponent
-              batters={this.state.batters}
-              battersIndex={this.state.battersIndex}
-            />
+        <View style={styles.infoArea}>
+          <View style={styles.infoAreaCol}>
+            <View style={styles.countsBoard}>
+              <CountsBoardComponent
+                balls={this.state.ballsCount}
+                strikes={this.state.strikesCount}
+                outs={this.state.outsCount}
+              />
+            </View>
+            <View style={styles.batterInfo}>
+              <BatterInfoComponent
+                batter={this.state.currentPlayers[this.state.turn][this.state.battersIndex]}
+                battersIndex={this.state.battersIndex}
+              />
+            </View>
           </View>
-          <View style={styles.countsBoard}>
-            <CountsBoardComponent
-              balls={this.state.ballsCount}
-              strikes={this.state.strikesCount}
-              outs={this.state.outsCount}
-            />
+          <View style={styles.infoAreaCol}>
+            <View style={styles.ballsList}>
+              <BallsListComponent
+                balls={this.state.balls}
+              />
+            </View>
           </View>
-        </View>
-        <View style={styles.underArea}>
-          <View style={styles.ballsList}>
-            <Text>1</Text>
+          <View style={styles.infoAreaCol}>
+            <View style={styles.currentPlayersList}>
+              <CurrentPlayersListComponent
+                team={this.state.teams[this.state.turn]}
+                currentPlayers={this.state.currentPlayers[this.state.turn]}
+                battersIndex={this.state.battersIndex}
+              />
+            </View>
           </View>
         </View>
         <BallTooltipComponent

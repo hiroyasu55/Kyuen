@@ -163,9 +163,5 @@ export default class AddBallPopover extends Component<{}> {
         />
       </View>
     );
-    /*
-      {this.props.x},{this.props.y}/
-      {this.props.pointX},{this.props.pointY}/
-    */
   }
 }
